@@ -1,0 +1,2 @@
+v 1
+p statapar Statapar: A simple package for running Stata do-files in parallel

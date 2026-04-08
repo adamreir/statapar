@@ -1,0 +1,5 @@
+v 1
+d Statapar: Package for running Stata do-files in parallel
+d Adam Reiremo
+f statapar.ado
+f statapar.sthlp
