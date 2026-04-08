@@ -7,3 +7,5 @@ net install statapar, from("https://raw.githubusercontent.com/adamreir/statapar/
 ```
 
 Tested on Stata MP 16.1 (Linux) and StataNow/SE 18.5 (Windows)
+
+See help file ("help statapar") after installing for instructions
