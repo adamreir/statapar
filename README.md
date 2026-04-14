@@ -98,4 +98,11 @@ All six jobs run simultaneously (subject to `maxjobs()`). Once they finish, you 
 
 ---
 
+## Provided Code Examples
+This GitHub repository provides two code examples of how to use Statapar: 
+1. [Example 1: Running multiple do-files in parallel.](example_1_multiple_dofiles/)
+2. [Example 2: Running a single do-file with different macros.](example_2_single_dofile/)
+
+---
+
 See `help statapar` after installing for full documentation.
