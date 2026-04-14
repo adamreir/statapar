@@ -16,18 +16,19 @@ It estimates a simple regression of January temperatures on July temperatures se
 
 ## How to run it
 
-Open `example_main.do` in Stata, update the two path variables at the top to match your computer, and run the file.
+1. Download `example_main.do` and `example_client.do` and place them in a folder.
+2. Create a folder called `output` inside the same folder as the two do-files.
+3. Open `example_main.do` in Stata, update the two path variables at the top to match your computer, and run the file.
 
 ```stata
 loc code_directory   = "path/to/example_1_single_dofile"
 loc output_directory = "path/to/example_1_single_dofile/output"
 ```
-
-Then run the file. Statapar will launch four Stata processes simultaneously — one per region — and wait for all of them to finish before loading and displaying the results.
+4.  Run `example_main.do`. Statapar will launch four Stata processes simultaneously — one per region — and wait for all of them to finish before loading and displaying the results.
 
 ## How it works
 
-`example_client.do` uses two local macros: `` `region' `` (which region to filter on) and `` `output_directory' `` (where to save the estimates). It looks like this:
+`example_main.do` opens separate Stata processes, each one running `example_client.do` with two local macros allready defined. Statapar sets these two local macros to different values (given when calling `statapar submit`): `` `region' `` (which region to filter on) and `` `output_directory' `` (where to save the estimates). `example_client.do` looks like this:
 
 ```stata
 sysuse citytemp, clear
