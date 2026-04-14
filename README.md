@@ -15,7 +15,11 @@ Tested on Stata MP 16.1 (Linux) and StataNow/SE 18.5 (Windows).
 
 Stata normally runs one task at a time. If you need to run the same do-file for 20 countries, or run three independent scripts, you have to wait for each one to finish before the next one starts.
 
-Statapar solves this by launching each job as a separate Stata process in the background, so all jobs run at the same time. You just describe the jobs, call `statapar run`, and wait for everything to finish.
+One way to speed up this process is to open multiple Stata windows, and run different do-files in each window. Statapar does this for you by launching each job as a separate Stata process in the background. 
+
+Statapar also gives you the option to call do-files with local macros already defined. This option let you run a single do-file with different options, speeding up compute heavy processes. See [Example 2](example_2_single_dofile/) for a concrete example. 
+
+Statapar makes Stata faster by utilizing more of the computer's CPU power. Make sure you don't annoy your colleagues by running to many do-files in parallell (see option `maxjobs()`). 
 
 ---
 
