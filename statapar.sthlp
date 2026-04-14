@@ -1,9 +1,9 @@
 {smcl}
-{* *! version 0.0.1 29March2026}{...}
+{* *! version 0.1.0 14April2026}{...}
 {title:Title}
 
 {p2colset 5 15 17 2}{...}
-{p2col :{hi:statapar} {hline 2}}Run a do-file across many parameter combinations in parallel{p_end}
+{p2col :{hi:statapar} {hline 2}}Run multiple Stata do-files in parallel{p_end}
 {p2col:}{browse "https://github.com/adamreir/statapar":(View on GitHub)}{p_end}
 {p2colreset}{...}
 
@@ -23,46 +23,49 @@
 {title:Description}
 
 {pstd}
-{cmd:statapar} lets you run multiple Stata processes in parallel, executing a single do-file with different local macros.
-This is useful whenever you have a do-file that produces one result (e.g. estimates a model, produces a table, runs a simulation)
-and you want to run it across many parameter combinations without waiting for each run to finish before starting the next.
+{cmd:statapar} lets you run multiple Stata do-files in parallel.
+Each job runs in its own separate Stata process, so all jobs can proceed at the same time
+rather than waiting for the previous one to finish.
 
 {pstd}
-A typical {cmd:statapar} session has three steps:
+You can use {cmd:statapar} in two ways:
 
-{phang2}1. Declare a new session with {cmd:statapar init}, specifying which do-file to run and which local macros it expects.{p_end}
-{phang2}2. Call {cmd:statapar submit} once per job, passing the macro values for that job. This step tells {cmd:statapar} to add a pass through the do-file with the provided macros to the list of jobs to do.{p_end}
-{phang2}3. Call {cmd:statapar run} to launch all queued jobs in parallel and wait until they all finish. Note that {cmd:statapar} restricts the number of parallel processes to leave CPU resources for other jobs and users.{p_end}
+{phang2}{c 149} Run several {bf:different} do-files in parallel — for example, three independent cleaning scripts that do not depend on each other.{p_end}
+{phang2}{c 149} Run the {bf:same} do-file multiple times with different local macro values — for example, the same estimation routine for many countries or subgroups.{p_end}
 
 {pstd}
-{cmd:statapar} works on both Windows (untested) and Unix/Mac.
+A {cmd:statapar} session always follows the same three steps:
+
+{phang2}1. Call {cmd:statapar init} to start a new session.{p_end}
+{phang2}2. Call {cmd:statapar submit} once for each job you want to run, providing the do-file and any local macros it needs.{p_end}
+{phang2}3. Call {cmd:statapar run} to launch all queued jobs at once and wait until they all finish.{p_end}
+
+{pstd}
+{cmd:statapar} works on Windows and Unix/Mac.
 
 {marker overview}{...}
 {title:Overview}
 
-{pstd}
-{cmd:statapar} runs in three steps
-
 {p2colset 9 25 27 2}{...}
-{p2col :{cmd:statapar init}}Set up a new parallel session{p_end}
-{p2col :{cmd:statapar submit}}Queue a job with a specific set of parameter values{p_end}
-{p2col :{cmd:statapar run}}Execute all queued jobs in parallel{p_end}
+{p2col :{cmd:statapar init}}Start a new parallel session{p_end}
+{p2col :{cmd:statapar submit}}Add a job to the queue{p_end}
+{p2col :{cmd:statapar run}}Launch all queued jobs in parallel{p_end}
 {p2colreset}{...}
 
 {marker syntax}{...}
 {title:Syntax}
 
 {pstd}
-Step 1 — initialize a session:
+Step 1 — start a session:
 
 {p 8 16 2}
-{cmd:statapar init,} {opt dofile(path)} {opt macros(namelist)} [{opt maxjobs(#)}]
+{cmd:statapar init} [{cmd:,} {opt maxjobs(#)}]
 
 {pstd}
-Step 2 — queue a job (repeat once per desired parameter combination):
+Step 2 — add a job (repeat once per job):
 
 {p 8 16 2}
-{cmd:statapar submit,} {it:macro1}{cmd:(}{it:value}{cmd:)} [{it:macro2}{cmd:(}{it:value}{cmd:)} ...]
+{cmd:statapar submit,} {opt dofile(path)} [{opt locals(namelist)} {opt values("val1" "val2" ...)}]
 
 {pstd}
 Step 3 — run all queued jobs:
@@ -74,43 +77,64 @@ Step 3 — run all queued jobs:
 {title:Options}
 
 {pstd}
-{ul:statapar init options}
+{ul:statapar init}
 
 {phang}
-{opt dofile(path)} specifies the do-file to run in Parallel. This do-file will be executed once per submitted job.
-The local macros provided to {cmd statapar submit} are autmatically available for this do-file (see example below). Required.
+{opt maxjobs(#)} sets the maximum number of Stata processes allowed to run at the same time.
+Once this limit is reached, {cmd:statapar} waits for a job to finish before starting the next one.
+Default is {cmd:5}.
+
+{pstd}
+{bf:{err:Warning:}} {opt maxjobs()} restricts the number of parallel Stata {it:processes}, not CPU cores.
+If you are using Stata-MP, each process can use multiple cores.
+For example, {cmd:maxjobs(5)} with Stata-MP-16 may use up to 80 cores simultaneously.
+
+{pstd}
+{ul:statapar submit}
 
 {phang}
-{opt macros(namelist)} specifies the names of the local macros that the do-file expects.
-These names become the option names for {cmd:statapar submit}.
-For example, {cmd:macros(model year)} means the do-file uses {cmd:`model'} and {cmd:`year'},
-and each call to {cmd:statapar submit} will supply {cmd:model(...)} and {cmd:year(...)}. Required.
+{opt dofile(path)} specifies the do-file to run as a job. Required.
+
+{phang}
+{opt locals(namelist)} specifies the names of the local macros to define before running the do-file.
+Must be combined with {opt values()}. The number of names must match the number of values.
+
+{phang}
+{opt values("val1" "val2" ...)} specifies the value for each local macro listed in {opt locals()}.
+Each value {bf:must} be enclosed in double quotes, even for numbers.
+The order corresponds to the order of names in {opt locals()}.
 
 {pmore}
-{bf:Note:} each job runs in a separate Stata process with no access to the calling session's memory.
-Global macros, scalars, matrices, and loaded data from the main session will {bf:not} be available.
-Any values the do-file needs must be passed explicitly via {opt macros()} or defined in the do-file passed to {opt dofile()}.
-
-{phang}
-{opt maxjobs(#)} sets the maximum number of Stata processes that may run simultaneously. Once this limit is reached, {cmd:statapar} waits for a job to finish before starting the next one. Default is {cmd:5}.
-
-{pstd}
-{bf:{err:Warning:}} {cmd:maxjobs()} only restricts the number of parallel Stata processes, {bf:not} the number of CPUs.
-If you are using Stata-MP, each process can use multiple CPU cores.
-For example, {cmd:maxjobs(5)} with Stata-MP-16 can result in up to 80 CPU cores being used simultaneously.
-
-{pstd}
-{ul:statapar submit options}
-
-{phang}
-{it:macro1}{cmd:(}{it:value}{cmd:)}, {it:macro2}{cmd:(}{it:value}{cmd:)}, ... supply the values for the macros declared in {cmd:statapar init}.
-One option is required for each macro name declared in {opt macros()}. The option names match those macro names exactly.
+{bf:Note:} each job runs in a completely separate Stata process.
+Global macros, scalars, matrices, and loaded data from the calling session are {bf:not} available.
+Everything the do-file needs must either be passed via {opt locals()} and {opt values()}, or loaded from disk inside the do-file.
 
 {marker examples}{...}
 {title:Examples}
 
 {pstd}
-Suppose you have a do-file {cmd:estimate.do} that runs a regression for a given country and year:
+{ul:Example 1: Running independent do-files in parallel}
+
+{pstd}
+Suppose you have three do-files that are completely independent of each other —
+they do not share data or depend on each other's results.
+Instead of running them one at a time, you can run all three at once:
+
+{phang2}{cmd:statapar init}{p_end}
+{phang2}{cmd:statapar submit, dofile(clean.do)}{p_end}
+{phang2}{cmd:statapar submit, dofile(analysis.do)}{p_end}
+{phang2}{cmd:statapar submit, dofile(figures.do)}{p_end}
+{phang2}{cmd:statapar run}{p_end}
+
+{pstd}
+{cmd:statapar run} returns once all three do-files have finished.
+
+{pstd}
+{ul:Example 2: Running the same do-file with different local macros}
+
+{pstd}
+Suppose you have a do-file {cmd:estimate.do} that runs a regression for a given country and year,
+using two local macros {cmd:`country'} and {cmd:`year'}:
 
 {p 8 16 2}{it:(estimate.do)}{p_end}
 {phang2}{cmd:use data_`country'_`year'.dta, clear}{p_end}
@@ -118,49 +142,53 @@ Suppose you have a do-file {cmd:estimate.do} that runs a regression for a given 
 {phang2}{cmd:estimates save results_`country'_`year', replace}{p_end}
 
 {pstd}
-You want to run this for three countries and two years — six jobs in total. With {cmd:statapar}:
+You want to run this for three countries and two years — six jobs in total.
+Each call to {cmd:statapar submit} provides the do-file and the macro values for that job:
 
-{phang2}{cmd:statapar init, dofile(estimate.do) macros(country year) maxjobs(6)}{p_end}
-{phang2}{cmd:statapar submit, country(usa) year(2020)}{p_end}
-{phang2}{cmd:statapar submit, country(usa) year(2021)}{p_end}
-{phang2}{cmd:statapar submit, country(gbr) year(2020)}{p_end}
-{phang2}{cmd:statapar submit, country(gbr) year(2021)}{p_end}
-{phang2}{cmd:statapar submit, country(deu) year(2020)}{p_end}
-{phang2}{cmd:statapar submit, country(deu) year(2021)}{p_end}
+{phang2}{cmd:statapar init, maxjobs(6)}{p_end}
+{phang2}{cmd:statapar submit, dofile(estimate.do) locals(country year) values("usa" "2020")}{p_end}
+{phang2}{cmd:statapar submit, dofile(estimate.do) locals(country year) values("usa" "2021")}{p_end}
+{phang2}{cmd:statapar submit, dofile(estimate.do) locals(country year) values("gbr" "2020")}{p_end}
+{phang2}{cmd:statapar submit, dofile(estimate.do) locals(country year) values("gbr" "2021")}{p_end}
+{phang2}{cmd:statapar submit, dofile(estimate.do) locals(country year) values("deu" "2020")}{p_end}
+{phang2}{cmd:statapar submit, dofile(estimate.do) locals(country year) values("deu" "2021")}{p_end}
 {phang2}{cmd:statapar run}{p_end}
 
 {pstd}
-All six jobs will run simultaneously (or as many as {opt maxjobs()} allows) and {cmd:statapar run} returns once the last job finishes.
-
-{pstd}
+All six jobs will run simultaneously (subject to {opt maxjobs()}) and {cmd:statapar run} returns once the last job finishes.
+Afterwards, the six results files can be loaded and combined in the usual way.
 
 {marker usecases}{...}
 {title:Use cases}
 
 {pstd}
-{cmd:statapar} is well suited for tasks where the same do-file is run repeatedly with different inputs and each run is independent of the others. Common examples:
+{cmd:statapar} is well suited for tasks where jobs are independent of each other. Common examples:
 
 {phang2}{c 149} Estimating the same model across many subgroups, countries, or time periods.{p_end}
+{phang2}{c 149} Running multiple independent cleaning or processing scripts.{p_end}
 {phang2}{c 149} Running Monte Carlo simulations with different seeds or parameter values.{p_end}
-{phang2}{c 149} Producing many output files (tables, figures, datasets) where each can be generated independently.{p_end}
-{phang2}{c 149} Bootstrapping or permutation testing where each replication is a separate do-file run.{p_end}
+{phang2}{c 149} Bootstrapping or permutation testing where each replication is independent.{p_end}
+{phang2}{c 149} Producing many output files (tables, figures, datasets) where each can be generated on its own.{p_end}
 
 {pstd}
-{cmd:statapar} is {ul:not} suited for tasks where runs depend on each other or need to share memory, since each job runs in a completely separate Stata process.
+{cmd:statapar} is {ul:not} suited for tasks where jobs depend on each other or need to share memory,
+since each job runs in a completely separate Stata process.
 
 {marker hood}{...}
 {title:How it works}
 
 {pstd}
-{cmd:statapar init} writes a shell script (PowerShell on Windows, bash on Unix/Mac) and defines an internal {cmd:statapar_submit} program in memory.
+{cmd:statapar init} creates a shell script in Stata's temporary directory
+(PowerShell on Windows, bash on Unix/Mac).
 
 {pstd}
-Each call to {cmd:statapar submit} creates a small wrapper do-file in Stata's temp directory.
-That wrapper defines the supplied local macros and then calls {cmd:include} on the target do-file.
-The path to this wrapper is appended to the shell script.
+Each call to {cmd:statapar submit} does two things:
+it creates a small temporary do-file (also in Stata's temp directory) that optionally defines the supplied local macros
+and then calls {cmd:include} on the target do-file;
+and it appends the path to that temporary do-file to the shell script.
 
 {pstd}
-{cmd:statapar run} finalizes the shell script with job-throttling logic, executes it, and waits for all spawned processes to exit.
+{cmd:statapar run} finalizes the shell script with job-throttling logic, executes it, and waits for all spawned processes to finish.
 It then deletes all temporary files and resets the session.
 The Stata executable path is detected automatically from {cmd:c(sysdir_stata)} and {cmd:c(edition_real)}.
 

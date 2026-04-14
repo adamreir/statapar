@@ -3,13 +3,13 @@
 loc code_directory   = "C:\Users\s16501\Documents\GitHub\statapar\example" // Where to find example_client.do
 loc output_directory = "C:\Users\s16501\Documents\GitHub\statapar\example\output" // A folder where Stata can store estimates from example_client.do
 
-// Run regional regressions in parallel: 
-statapar init, dofile("`code_directory'/example_client.do") macros(region output_directory) maxjobs(3)
+// Run regional regressions in parallel:
+statapar init, maxjobs(3)
 
-statapar submit, region(1) output_directory("`output_directory'")
-statapar submit, region(2) output_directory("`output_directory'")
-statapar submit, region(3) output_directory("`output_directory'")
-statapar submit, region(4) output_directory("`output_directory'")
+statapar submit, dofile("`code_directory'/example_client.do") locals(region output_directory) values("1" "`output_directory'")
+statapar submit, dofile("`code_directory'/example_client.do") locals(region output_directory) values(2 "`output_directory'")
+statapar submit, dofile("`code_directory'/example_client.do") locals(region output_directory) values(3 "`output_directory'")
+statapar submit, dofile("`code_directory'/example_client.do") locals(region output_directory) values(4 "`output_directory'")
 
 statapar run
 
