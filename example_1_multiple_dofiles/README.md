@@ -38,7 +38,7 @@ loc output_directory = "path/to/example_1_multiple_dofiles/output"
 
 ## How it works
 
-`example_main.do` opens separate Stata processes, each one running a different do-file. Each do-file is a completely self-contained analysis: it loads the data, runs its model, and saves the estimates to the output folder. The only shared input is the output directory, which is passed in via a local macro:
+`example_main.do` opens separate Stata processes, each one running a different do-file. Global macros from the calling session are automatically available inside each job. Each do-file loads its own data, runs its model, and saves the estimates to the output folder. The output directory is passed in as a local macro:
 
 ```stata
 statapar submit, dofile(model_ols.do)       locals(output_directory) values("path/to/output")

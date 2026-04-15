@@ -59,7 +59,7 @@ A {cmd:statapar} session always follows the same three steps:
 Step 1 — start a session:
 
 {p 8 16 2}
-{cmd:statapar init} [{cmd:,} {opt max_cpu(#)} {opt force}]
+{cmd:statapar init} [{cmd:,} {opt max_cpu(#)} {opt force} {opt noglobal} {opt keepdata}]
 
 {pstd}
 Step 2 — add a job (repeat once per job):
@@ -89,6 +89,16 @@ such that {cmd:max_jobs * c(processors) < max_cpu}.
 {opt force} allows {opt max_cpu(#)} to exceed the default limit.
 Without {opt force}, specifying a value above the default triggers an error.
 
+{phang}
+{opt noglobal} suppresses the automatic propagation of global macros to every job in the session.
+By default, the globals defined in the calling session at the time of each {cmd:statapar submit} call are written into that job's environment.
+
+{phang}
+{opt keepdata} passes the dataset currently in memory to every job in the session.
+When {cmd:statapar run} is called, the active dataset is saved to a temporary file;
+each job then loads that file at startup, before any local macros are defined.
+The temporary file is deleted automatically once all jobs have finished.
+
 {pstd}
 {bf:Note:} {opt max_cpu()} caps total CPU usage, not the number of processes directly.
 Because each Stata-MP process uses {cmd:c(processors)} cores, the actual number of simultaneous processes
@@ -112,8 +122,11 @@ The order corresponds to the order of names in {opt locals()}.
 
 {pmore}
 {bf:Note:} each job runs in a completely separate Stata process.
-Global macros, scalars, matrices, and loaded data from the calling session are {bf:not} available.
-Everything the do-file needs must either be passed via {opt locals()} and {opt values()}, or loaded from disk inside the do-file.
+Global macros from the calling session are automatically propagated to every job,
+so do-files can rely on globals just as they would in the main session.
+The active dataset can be passed to every job using {opt keepdata} on {cmd:statapar init}.
+Scalars and matrices are {bf:not} carried over — anything the do-file needs beyond globals and data
+must be passed via {opt locals()} and {opt values()}, or loaded from disk inside the do-file.
 
 {marker examples}{...}
 {title:Examples}

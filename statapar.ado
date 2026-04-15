@@ -34,7 +34,7 @@ end
 *
 
 prog def statapar_init
-	syntax [, max_cpu(integer 0) force]
+	syntax [, max_cpu(integer 0) force noglobal keepdata]
 
 	// Determine max_cpu (total logical CPUs available to statapar)
 	local default_max_cpu = max(floor(c(processors_mach)/2), 1)
@@ -58,6 +58,8 @@ prog def statapar_init
 			rm `file'
 		}
 		global statapar_tmpfiles = ""
+		cap rm `"${statapar_datafile}"'
+		global statapar_datafile = ""
 	}
 	
 	di "Init new multiprocessing environment (max_cpu=`max_cpu', maxjobs (maximum # parallel jobs) =`maxjobs')"
@@ -72,6 +74,22 @@ prog def statapar_init
 
 	loc username = "`c(username)'"
 	loc tmpdir = "`c(tmpdir)'"
+
+	// Figure out path for data tempfile if keepdata is specified
+	if "`keepdata'" != "" {
+		loc n = 1
+		while `"`data_file'"' == "" {
+			cap confirm new file `"`tmpdir'/statapar_data_`username'_`n'.dta"'
+			if !_rc {
+				loc data_file = `"`tmpdir'/statapar_data_`username'_`n'.dta"'
+			}
+			loc n = `n'+1
+		}
+		global statapar_datafile = `"`data_file'"'
+	}
+	else {
+		global statapar_datafile = ""
+	}
 
 	// Figure out path for shell file
 	if `unix'	loc ext = "sh"
@@ -139,6 +157,7 @@ prog def statapar_init
 	global statapar_tmpfiles = `"`shell_file'"'
 	global statapar_shellfile = `"`shell_file'"'
 	global statapar_active = 1
+	global statapar_noglobal = "`noglobal'"
 
 end
 
@@ -170,6 +189,11 @@ prog statapar_submit
 		}
 	}
 
+	// Append .do extension if missing
+	if substr(`"`dofile'"', -3, 3) != ".do" {
+		local dofile = `"`dofile'.do"'
+	}
+
 	// Check dofile exists
 	confirm file `"`dofile'"'
 
@@ -198,6 +222,21 @@ prog statapar_submit
 	file write statapar_do_file "capture log close _all" _n
 	file write statapar_do_file "set more off" _n
 	file write statapar_do_file "" _n
+
+	// Global macros from main environment
+	if "${statapar_noglobal}" == "" {
+		local globs : all globals
+		foreach g of local globs {
+			file write statapar_do_file `"global `g' `"${`g'}"'"' _n
+		}
+		file write statapar_do_file "" _n
+	}
+
+	// Load dataset from main environment if keepdata was specified
+	if `"${statapar_datafile}"' != "" {
+		file write statapar_do_file `"use `"${statapar_datafile}"', clear"' _n
+		file write statapar_do_file "" _n
+	}
 
 	// Write local assignments if provided
 	if `"`locals'"' != "" {
@@ -294,11 +333,20 @@ prog statapar_run
 		exit 198
 	}
 
+	// Save current dataset to tempfile if keepdata was specified
+	if `"${statapar_datafile}"' != "" {
+		save `"${statapar_datafile}"', replace
+	}
+
 	__statapar_close_sh
 
 	if c(os)=="Unix" 	loc unix = 1
 	else 			loc unix = 0
 
+	// Change to temp directory so Stata background processes write logs there
+	loc cwd = c(pwd)
+	loc tmpdir = c(tmpdir)
+	cd `"`tmpdir'"'
 
 	if `unix' {
 		! source "${statapar_shellfile}"
@@ -307,10 +355,24 @@ prog statapar_run
 		shell powershell -ExecutionPolicy Bypass -File "${statapar_shellfile}"
 	}
 
+	// Delete log files produced by background processes
+	foreach file of global statapar_tmpfiles {
+		if substr(`"`file'"', -3, 3) == ".do" {
+			loc logfile = substr(`"`file'"', 1, length(`"`file'"') - 3) + ".log"
+			cap rm `"`logfile'"'
+		}
+	}
+
+	// Restore working directory
+	cd `"`cwd'"'
+
 	foreach file of global statapar_tmpfiles {
 		rm `file'
 	}
 	global statapar_tmpfiles = ""
 	global statapar_shellfile = ""
 	global statapar_active = 0
+	global statapar_noglobal = ""
+	if `"${statapar_datafile}"' != "" cap rm `"${statapar_datafile}"'
+	global statapar_datafile = ""
 end

@@ -28,7 +28,7 @@ loc output_directory = "path/to/example_1_single_dofile/output"
 
 ## How it works
 
-`example_main.do` opens separate Stata processes, each one running `example_client.do` with two local macros allready defined. Statapar sets these two local macros to different values (given when calling `statapar submit`): `` `region' `` (which region to filter on) and `` `output_directory' `` (where to save the estimates). `example_client.do` looks like this:
+`example_main.do` opens separate Stata processes, each one running `example_client.do`. Global macros from the calling session are automatically available inside each job. In addition, statapar sets two local macros to job-specific values (supplied via `statapar submit`): `` `region' `` (which region to filter on) and `` `output_directory' `` (where to save the estimates). `example_client.do` looks like this:
 
 ```stata
 sysuse citytemp, clear

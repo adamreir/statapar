@@ -83,7 +83,7 @@ statapar run
 
 All six jobs run simultaneously — possibly not all at the same time, depending on how many parallel processes `max_cpu()` allows. Once they finish, you can load and combine the results files as usual.
 
-> **Note:** each job runs in a completely separate Stata process. Global macros, loaded data, and scalars from the calling session are not available inside the do-file. Everything it needs must be passed via `locals()`/`values()` or loaded from disk inside the do-file.
+> **Note:** each job runs in a completely separate Stata process. Global macros from the calling session are automatically propagated to every job, so do-files can rely on globals just as they would in the main session. The active dataset can be forwarded to every job with `keepdata` on `statapar init`. Scalars and matrices are not carried over — anything beyond globals and data must be passed via `locals()`/`values()` or loaded from disk. Specify `noglobal` on `statapar init` to suppress global propagation for the entire session.
 
 ---
 
@@ -93,6 +93,8 @@ All six jobs run simultaneously — possibly not all at the same time, depending
 |---|---|---|
 | `max_cpu(#)` | `init` | Maximum logical CPUs to use across all parallel jobs. Defaults to `floor(c(processors_mach)/2)` (half the machine's CPUs). The number of simultaneous processes is then set automatically based on `c(processors)` per process. |
 | `force` | `init` | Allow `max_cpu(#)` to exceed the default limit. |
+| `noglobal` | `init` | Suppress the automatic propagation of global macros to each job's environment. |
+| `keepdata` | `init` | Pass the dataset currently in memory to every job. The data is saved to a temporary file when `statapar run` is called and loaded at the start of each job, before any local macros are defined. The temporary file is deleted once all jobs finish. |
 | `dofile(path)` | `submit` | The do-file to run as a job. Required. |
 | `locals(namelist)` | `submit` | Names of local macros to define before running the do-file. |
 | `values("v1" "v2" ...)` | `submit` | Values for each local in `locals()`. Each value must be quoted. |
