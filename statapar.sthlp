@@ -168,6 +168,14 @@ Afterwards, the six results files can be loaded and combined in the usual way.
 {title:Use cases}
 
 {pstd}
+{cmd:statapar} is most useful when your machine has more CPU cores than a single Stata process can use.
+Stata SE is limited to one core regardless of the underlying hardware,
+and Stata MP is capped at a fixed number of cores per licence (up to 64).
+If you are running Stata SE on a modern multi-core workstation,
+or Stata MP on a server where many cores would otherwise sit idle,
+{cmd:statapar} lets you put that spare capacity to work by running several Stata processes in parallel.
+
+{pstd}
 {cmd:statapar} is well suited for tasks where jobs are independent of each other. Common examples:
 
 {phang2}{c 149} Estimating the same model across many subgroups, countries, or time periods.{p_end}

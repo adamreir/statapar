@@ -50,8 +50,6 @@ prog def statapar_init
 	// Derive max_jobs: largest integer s.t. max_jobs * c(processors) < max_cpu
 	local maxjobs = max(floor((`max_cpu' - 1) / c(processors)), 1)
 
-	di "Init new multiprocessing environment (max_cpu=`max_cpu', max_jobs=`maxjobs')"
-
 	// Restart environment if it's already active
 	if `"${statapar_tmpfiles}"'!="" {
 		global statapar_active = 0
@@ -61,6 +59,8 @@ prog def statapar_init
 		}
 		global statapar_tmpfiles = ""
 	}
+	
+	di "Init new multiprocessing environment (max_cpu=`max_cpu', maxjobs (maximum # parallel jobs) =`maxjobs')"
 
 	cap assert inlist(c(os), "Windows", "Unix")
 	if _rc {
@@ -149,9 +149,6 @@ prog statapar_submit
 		di as error "Statapar session not open."
 		exit 198
 	}
-
-	di  `"locals: |`locals'|"'
-	di  `"values: |`values'|"'
 	
 	// Validate locals and values
 	if `"`locals'"' != "" {

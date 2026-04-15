@@ -19,7 +19,9 @@ One way to speed up this process is to open multiple Stata windows, and run diff
 
 Statapar also gives you the option to call do-files with local macros already defined. This option let you run a single do-file with different options, speeding up compute heavy processes. See [Example 2](example_2_single_dofile/) for a concrete example. 
 
-Statapar makes Stata faster by utilizing more of the computer's CPU power. Make sure you don't annoy your colleagues by running to many do-files in parallell (see option `max_cpu()` below). 
+Statapar is most useful when your machine has more CPU cores than a single Stata process can use. Stata SE is limited to one core regardless of hardware, and even Stata MP is capped at a fixed number of cores per process (up to 64). If you are running Stata SE on any modern multi-core workstation, or Stata MP on a server with many cores to spare, those idle cores would otherwise go unused — statapar lets you put them to work by running several Stata processes at the same time.
+
+Statapar makes Stata faster by utilizing more of the computer's CPU power. Make sure you don't annoy your colleagues by running too many do-files in parallell (see option `max_cpu()` below). 
 
 ---
 
