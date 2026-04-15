@@ -1,6 +1,6 @@
 
-loc code_directory   = "C:\Users\s16501\Documents\GitHub\statapar\example_1_single_dofile"
-loc output_directory = "C:\Users\s16501\Documents\GitHub\statapar\example_1_single_dofile\output"
+loc code_directory   = "C:\Users\s16501\Documents\GitHub\statapar\example_2_single_dofile"
+loc output_directory = "C:\Users\s16501\Documents\GitHub\statapar\example_2_single_dofile\output"
 
 // Run the same do-file four times in parallel, once per region:
 statapar init, maxjobs(4)

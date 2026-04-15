@@ -19,7 +19,7 @@ One way to speed up this process is to open multiple Stata windows, and run diff
 
 Statapar also gives you the option to call do-files with local macros already defined. This option let you run a single do-file with different options, speeding up compute heavy processes. See [Example 2](example_2_single_dofile/) for a concrete example. 
 
-Statapar makes Stata faster by utilizing more of the computer's CPU power. Make sure you don't annoy your colleagues by running to many do-files in parallell (see option `maxjobs()`). 
+Statapar makes Stata faster by utilizing more of the computer's CPU power. Make sure you don't annoy your colleagues by running to many do-files in parallell (see option `max_cpu()` below). 
 
 ---
 
@@ -42,14 +42,14 @@ If you have several do-files that don't depend on each other, you can run them a
 ```stata
 statapar init
 
-statapar submit, dofile(clean.do)
-statapar submit, dofile(analysis.do)
-statapar submit, dofile(figures.do)
+statapar submit, dofile("/some_path/clean_individual.do")
+statapar submit, dofile("/some_path/clean_firms.do")
+statapar submit, dofile("/some_path/clean_education.do")
 
 statapar run
 ```
 
-`statapar run` returns once all three do-files have finished.
+`statapar run` opens three different background Stata processes, and returns once all processes have finished.
 
 ---
 
@@ -67,19 +67,19 @@ estimates save results_`country'_`year', replace
 You can run this for every country-year combination in parallel using `locals()` and `values()`:
 
 ```stata
-statapar init, maxjobs(6)
+statapar init
 
-statapar submit, dofile(estimate.do) locals(country year) values("usa" "2020")
-statapar submit, dofile(estimate.do) locals(country year) values("usa" "2021")
-statapar submit, dofile(estimate.do) locals(country year) values("gbr" "2020")
-statapar submit, dofile(estimate.do) locals(country year) values("gbr" "2021")
-statapar submit, dofile(estimate.do) locals(country year) values("deu" "2020")
-statapar submit, dofile(estimate.do) locals(country year) values("deu" "2021")
+statapar submit, dofile("/some_path/estimate.do") locals(country year) values("usa" "2020")
+statapar submit, dofile("/some_path/estimate.do") locals(country year) values("usa" "2021")
+statapar submit, dofile("/some_path/estimate.do") locals(country year) values("gbr" "2020")
+statapar submit, dofile("/some_path/estimate.do") locals(country year) values("gbr" "2021")
+statapar submit, dofile("/some_path/estimate.do") locals(country year) values("deu" "2020")
+statapar submit, dofile("/some_path/estimate.do") locals(country year) values("deu" "2021")
 
 statapar run
 ```
 
-All six jobs run simultaneously (subject to `maxjobs()`). Once they finish, you can load and combine the results files as usual.
+All six jobs run simultaneously — possibly not all at the same time, depending on how many parallel processes `max_cpu()` allows. Once they finish, you can load and combine the results files as usual.
 
 > **Note:** each job runs in a completely separate Stata process. Global macros, loaded data, and scalars from the calling session are not available inside the do-file. Everything it needs must be passed via `locals()`/`values()` or loaded from disk inside the do-file.
 
@@ -89,12 +89,13 @@ All six jobs run simultaneously (subject to `maxjobs()`). Once they finish, you 
 
 | Option | Command | Description |
 |---|---|---|
-| `maxjobs(#)` | `init` | Maximum simultaneous processes. Default: 5 |
+| `max_cpu(#)` | `init` | Maximum logical CPUs to use across all parallel jobs. Defaults to `floor(c(processors_mach)/2)` (half the machine's CPUs). The number of simultaneous processes is then set automatically based on `c(processors)` per process. |
+| `force` | `init` | Allow `max_cpu(#)` to exceed the default limit. |
 | `dofile(path)` | `submit` | The do-file to run as a job. Required. |
 | `locals(namelist)` | `submit` | Names of local macros to define before running the do-file. |
 | `values("v1" "v2" ...)` | `submit` | Values for each local in `locals()`. Each value must be quoted. |
 
-> **Warning:** `maxjobs()` limits the number of parallel Stata *processes*, not CPU cores. If you use Stata-MP, each process can use multiple cores — keep this in mind when setting `maxjobs()`.
+> **Note:** the number of simultaneous processes is derived automatically as the largest integer such that `max_jobs * c(processors) < max_cpu`. If you use Stata-MP, `c(processors)` reflects the number of cores each Stata process is licensed to use, so the limit is respected in terms of total core usage.
 
 ---
 

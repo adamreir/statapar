@@ -2,7 +2,7 @@
 * Date: March 27, 2026
 * Content: Simple program for running multiple Stata do-files in parallel, with optional local macros per job.
 * Usage:
-	* 1. Initiate a new session: statapar init [maxjobs(maximum number of simultaneous processes)]
+	* 1. Initiate a new session: statapar init [max_cpu(max logical CPUs to use; default: floor(c(processors_mach)/2))]
 	* 2. Submit a job: statapar submit, dofile(path) [locals(name1 name2 ...) values("val1" "val2" ...)]
 	* 3. Run: statapar run
 
@@ -34,9 +34,23 @@ end
 *
 
 prog def statapar_init
-	syntax [, maxjobs(integer 5)]
+	syntax [, max_cpu(integer 0) force]
 
-	di "Init new multiprocessing environment"
+	// Determine max_cpu (total logical CPUs available to statapar)
+	local default_max_cpu = max(floor(c(processors_mach)/2), 1)
+	if `max_cpu' == 0 {
+		local max_cpu = `default_max_cpu'
+	}
+	else if `max_cpu' > `default_max_cpu' & "`force'" == "" {
+		di as error "max_cpu(`max_cpu') exceeds the recommended limit of `default_max_cpu' (half of c(processors_mach)=`c(processors_mach)')."
+		di as error "Use the force option to override: statapar init, max_cpu(`max_cpu') force"
+		exit 198
+	}
+
+	// Derive max_jobs: largest integer s.t. max_jobs * c(processors) < max_cpu
+	local maxjobs = max(floor((`max_cpu' - 1) / c(processors)), 1)
+
+	di "Init new multiprocessing environment (max_cpu=`max_cpu', max_jobs=`maxjobs')"
 
 	// Restart environment if it's already active
 	if `"${statapar_tmpfiles}"'!="" {
@@ -63,16 +77,16 @@ prog def statapar_init
 	if `unix'	loc ext = "sh"
 	else 		loc ext = "ps1"
 	loc n = 1
-	while "`shell_file'" == "" {
-		cap confirm new file "`tmpdir'/statapar_shell_`username'_`n'.`ext'"
+	while `"`shell_file'"' == "" {
+		cap confirm new file `"`tmpdir'/statapar_shell_`username'_`n'.`ext'"'
 		if !_rc {
-			loc shell_file = "`tmpdir'/statapar_shell_`username'_`n'.`ext'"
+			loc shell_file = `"`tmpdir'/statapar_shell_`username'_`n'.`ext'"'
 		}
 		loc n = `n'+1
 	}
 
 	// Make shell file
-	qui file open statapar_shell_file using "`shell_file'", write text replace
+	qui file open statapar_shell_file using `"`shell_file'"', write text replace
 	file write statapar_shell_file `""' _n
 
 	if `unix' { // Bash script
@@ -136,9 +150,12 @@ prog statapar_submit
 		exit 198
 	}
 
+	di  `"locals: |`locals'|"'
+	di  `"values: |`values'|"'
+	
 	// Validate locals and values
-	if "`locals'" != "" {
-		if "`values'" == "" {
+	if `"`locals'"' != "" {
+		if `"`values'"' == "" {
 			di as error "values() must be specified when locals() is specified."
 			exit 198
 		}
@@ -159,15 +176,15 @@ prog statapar_submit
 	// Check dofile exists
 	confirm file `"`dofile'"'
 
-	loc username = "`c(username)'"
-	loc tmpdir = "`c(tmpdir)'"
+	loc username = `"`c(username)'"'
+	loc tmpdir = `"`c(tmpdir)'"'
 
 	// Find a unique temp do-file path
 	loc n = 1
-	while "`do_file'" == "" {
-		cap confirm new file "`tmpdir'/statapar_do_`username'_`n'.do"
+	while `"`do_file'"' == "" {
+		cap confirm new file `"`tmpdir'/statapar_do_`username'_`n'.do"'
 		if !_rc {
-			loc do_file = "`tmpdir'/statapar_do_`username'_`n'.do"
+			loc do_file = `"`tmpdir'/statapar_do_`username'_`n'.do"'
 		}
 		loc n = `n'+1
 	}
@@ -179,14 +196,14 @@ prog statapar_submit
 
 	// Write the temp do-file
 	global statapar_tmpfiles = `"${statapar_tmpfiles} `do_file'"'
-	qui file open statapar_do_file using "`do_file'", write text replace
+	qui file open statapar_do_file using `"`do_file'"', write text replace
 	file write statapar_do_file "" _n
 	file write statapar_do_file "capture log close _all" _n
 	file write statapar_do_file "set more off" _n
 	file write statapar_do_file "" _n
 
 	// Write local assignments if provided
-	if "`locals'" != "" {
+	if `"`locals'"' != "" {
 		local nlocals : word count `locals'
 		forvalues i = 1/`nlocals' {
 			local lname : word `i' of `locals'

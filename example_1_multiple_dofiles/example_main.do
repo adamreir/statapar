@@ -1,9 +1,13 @@
 
-loc code_directory   = "C:\Users\s16501\Documents\GitHub\statapar\example_2_multiple_dofiles"
-loc output_directory = "C:\Users\s16501\Documents\GitHub\statapar\example_2_multiple_dofiles\output"
+// Enter folders: 
+
+loc code_directory   = "" // "C:\Users\s16501\Documents\GitHub\statapar\example_1_multiple_dofiles"
+loc output_directory = "" // "C:\Users\s16501\Documents\GitHub\statapar\example_1_multiple_dofiles\output"
 
 // Run three different do-files in parallel, each estimating a different model:
 statapar init, maxjobs(3)
+
+//set trace on 
 
 statapar submit, dofile("`code_directory'/model_ols.do")        locals(output_directory) values("`output_directory'")
 statapar submit, dofile("`code_directory'/model_quadratic.do")  locals(output_directory) values("`output_directory'")

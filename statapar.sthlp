@@ -59,7 +59,7 @@ A {cmd:statapar} session always follows the same three steps:
 Step 1 — start a session:
 
 {p 8 16 2}
-{cmd:statapar init} [{cmd:,} {opt maxjobs(#)}]
+{cmd:statapar init} [{cmd:,} {opt max_cpu(#)} {opt force}]
 
 {pstd}
 Step 2 — add a job (repeat once per job):
@@ -80,14 +80,20 @@ Step 3 — run all queued jobs:
 {ul:statapar init}
 
 {phang}
-{opt maxjobs(#)} sets the maximum number of Stata processes allowed to run at the same time.
-Once this limit is reached, {cmd:statapar} waits for a job to finish before starting the next one.
-Default is {cmd:5}.
+{opt max_cpu(#)} sets the maximum number of logical CPUs that {cmd:statapar} may use in total across all parallel jobs.
+If not specified, the default is {cmd:max(floor(c(processors_mach)/2), 1)} — half the machine's available CPUs, rounded down, with a minimum of 1.
+{cmd:statapar} then automatically derives the number of simultaneous processes as the largest integer
+such that {cmd:max_jobs * c(processors) < max_cpu}.
+
+{phang}
+{opt force} allows {opt max_cpu(#)} to exceed the default limit.
+Without {opt force}, specifying a value above the default triggers an error.
 
 {pstd}
-{bf:{err:Warning:}} {opt maxjobs()} restricts the number of parallel Stata {it:processes}, not CPU cores.
-If you are using Stata-MP, each process can use multiple cores.
-For example, {cmd:maxjobs(5)} with Stata-MP-16 may use up to 80 cores simultaneously.
+{bf:Note:} {opt max_cpu()} caps total CPU usage, not the number of processes directly.
+Because each Stata-MP process uses {cmd:c(processors)} cores, the actual number of simultaneous processes
+is derived automatically — for example, with {cmd:max_cpu(8)} and Stata-MP/4, at most 1 process runs at a time
+(since 2 × 4 = 8 would not be strictly less than 8).
 
 {pstd}
 {ul:statapar submit}
@@ -145,7 +151,7 @@ using two local macros {cmd:`country'} and {cmd:`year'}:
 You want to run this for three countries and two years — six jobs in total.
 Each call to {cmd:statapar submit} provides the do-file and the macro values for that job:
 
-{phang2}{cmd:statapar init, maxjobs(6)}{p_end}
+{phang2}{cmd:statapar init}{p_end}
 {phang2}{cmd:statapar submit, dofile(estimate.do) locals(country year) values("usa" "2020")}{p_end}
 {phang2}{cmd:statapar submit, dofile(estimate.do) locals(country year) values("usa" "2021")}{p_end}
 {phang2}{cmd:statapar submit, dofile(estimate.do) locals(country year) values("gbr" "2020")}{p_end}
@@ -155,7 +161,7 @@ Each call to {cmd:statapar submit} provides the do-file and the macro values for
 {phang2}{cmd:statapar run}{p_end}
 
 {pstd}
-All six jobs will run simultaneously (subject to {opt maxjobs()}) and {cmd:statapar run} returns once the last job finishes.
+All six jobs will run simultaneously (subject to the process limit derived from {opt max_cpu()}) and {cmd:statapar run} returns once the last job finishes.
 Afterwards, the six results files can be loaded and combined in the usual way.
 
 {marker usecases}{...}
