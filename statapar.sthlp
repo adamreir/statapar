@@ -95,7 +95,7 @@ By default, the globals defined in the calling session at the time of each {cmd:
 
 {phang}
 {opt keepdata} passes the dataset currently in memory to every job in the session.
-When {cmd:statapar run} is called, the active dataset is saved to a temporary file;
+The active dataset is saved to a temporary file immediately when {cmd:statapar init} is called;
 each job then loads that file at startup, before any local macros are defined.
 The temporary file is deleted automatically once all jobs have finished.
 

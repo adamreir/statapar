@@ -86,7 +86,6 @@ prog def statapar_init
 			loc n = `n'+1
 		}
 		global statapar_datafile = `"`data_file'"'
-		save `"`data_file'"', replace
 	}
 	else {
 		global statapar_datafile = ""
@@ -334,6 +333,11 @@ prog statapar_run
 		exit 198
 	}
 
+	// Save current dataset to tempfile if keepdata was specified
+	if `"${statapar_datafile}"' != "" {
+		save `"${statapar_datafile}"', replace
+	}
+
 	__statapar_close_sh
 
 	if c(os)=="Unix" 	loc unix = 1
@@ -360,7 +364,7 @@ prog statapar_run
 	}
 
 	// Restore working directory
-	qui cd `"`cwd'"'
+	cd `"`cwd'"'
 
 	foreach file of global statapar_tmpfiles {
 		rm `file'

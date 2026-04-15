@@ -94,7 +94,7 @@ All six jobs run simultaneously — possibly not all at the same time, depending
 | `max_cpu(#)` | `init` | Maximum logical CPUs to use across all parallel jobs. Defaults to `floor(c(processors_mach)/2)` (half the machine's CPUs). The number of simultaneous processes is then set automatically based on `c(processors)` per process. |
 | `force` | `init` | Allow `max_cpu(#)` to exceed the default limit. |
 | `noglobal` | `init` | Suppress the automatic propagation of global macros to each job's environment. |
-| `keepdata` | `init` | Pass the dataset currently in memory to every job. The data is saved to a temporary file when `statapar run` is called and loaded at the start of each job, before any local macros are defined. The temporary file is deleted once all jobs finish. |
+| `keepdata` | `init` | Pass the dataset currently in memory to every job. The data is saved to a temporary file immediately when `statapar init` is called and loaded at the start of each job, before any local macros are defined. The temporary file is deleted once all jobs finish. |
 | `dofile(path)` | `submit` | The do-file to run as a job. Required. |
 | `locals(namelist)` | `submit` | Names of local macros to define before running the do-file. |
 | `values("v1" "v2" ...)` | `submit` | Values for each local in `locals()`. Each value must be quoted. |
