@@ -1,5 +1,5 @@
 # Statapar
-Statapar is a simple Stata package for running multiple Stata do-files in parallel.
+Statapar is a simple and transparent Stata package for running multiple Stata do-files in parallel.
 
 ## Installation
 ```stata
@@ -17,9 +17,9 @@ Stata normally runs one task at a time. If you need to run the same do-file for 
 
 One way to speed up this process is to open multiple Stata windows, and run different do-files in each window. Statapar does this for you by launching each job as a separate Stata process in the background. 
 
-Statapar also gives you the option to call do-files with local macros already defined. This option let you run a single do-file with different options, speeding up compute heavy processes. See [Example 2](example_2_single_dofile/) for a concrete example. 
+Statapar additionally gives you the option to call do-files with local macros already defined. This option let you run a single do-file with different options, speeding up compute heavy processes. See [Example 2](example_2_single_dofile/) for a concrete example. 
 
-Statapar is most useful when your machine has more CPU cores than a single Stata process can use. Stata SE is limited to one core regardless of hardware, and even Stata MP is capped at a fixed number of cores per process (up to 64). If you are running Stata SE on any modern multi-core workstation, or Stata MP on a server with many cores to spare, those idle cores would otherwise go unused — statapar lets you put them to work by running several Stata processes at the same time.
+Statapar is useful when your machine has more CPU cores than a single Stata process can use. Stata SE is limited to one core regardless of hardware, and even Stata MP is capped at a fixed number of cores per process (1-64 cores depending on version and license). If you are running Stata SE on any modern multi-core workstation, or Stata MP on a server with many cores to spare, those idle cores would otherwise go unused — Statapar lets you put them to work by running several Stata processes at the same time.
 
 Statapar makes Stata faster by utilizing more of the computer's CPU power. Make sure you don't annoy your colleagues by running too many do-files in parallell (see option `max_cpu()` below). 
 
@@ -42,12 +42,15 @@ Every statapar session has three steps:
 If you have several do-files that don't depend on each other, you can run them all at once:
 
 ```stata
-statapar init
+// Initiate a new parallel session
+statapar init 
 
-statapar submit, dofile("/some_path/clean_individual.do")
+// Submit three do-files that will be run in parallel
+statapar submit, dofile("/some_path/clean_individual.do") 
 statapar submit, dofile("/some_path/clean_firms.do")
 statapar submit, dofile("/some_path/clean_education.do")
 
+// Run the three jobs
 statapar run
 ```
 
@@ -55,7 +58,7 @@ statapar run
 
 ---
 
-### Running the same do-file with different inputs
+### Running the same do-file with different macros
 
 A common use case is running the same estimation routine for many subgroups. Suppose `estimate.do` uses two local macros — `` `country' `` and `` `year' `` — to load data and save results:
 
@@ -63,14 +66,17 @@ A common use case is running the same estimation routine for many subgroups. Sup
 * estimate.do
 use data_`country'_`year'.dta, clear
 reg y x
-estimates save results_`country'_`year', replace
+estimates save "${output_directory}/results_`country'_`year'", replace
 ```
 
 You can run this for every country-year combination in parallel using `locals()` and `values()`:
 
 ```stata
+global output_directory = "some_path" // Globals are forwarded to new processes
+
 statapar init
 
+// Submit jobs: Same do-file with different values for `country' and `year': 
 statapar submit, dofile("/some_path/estimate.do") locals(country year) values("usa" "2020")
 statapar submit, dofile("/some_path/estimate.do") locals(country year) values("usa" "2021")
 statapar submit, dofile("/some_path/estimate.do") locals(country year) values("gbr" "2020")
@@ -78,12 +84,13 @@ statapar submit, dofile("/some_path/estimate.do") locals(country year) values("g
 statapar submit, dofile("/some_path/estimate.do") locals(country year) values("deu" "2020")
 statapar submit, dofile("/some_path/estimate.do") locals(country year) values("deu" "2021")
 
+// Run
 statapar run
 ```
 
-All six jobs run simultaneously — possibly not all at the same time, depending on how many parallel processes `max_cpu()` allows. Once they finish, you can load and combine the results files as usual.
+Stata runns these jobs in parallel, each one with different values for `` `country' `` and `` `year' ``. Once they finish, you can load and combine the results files as usual.
 
-> **Note:** each job runs in a completely separate Stata process. Global macros from the calling session are automatically propagated to every job, so do-files can rely on globals just as they would in the main session. The active dataset can be forwarded to every job with `keepdata` on `statapar init`. Scalars and matrices are not carried over — anything beyond globals and data must be passed via `locals()`/`values()` or loaded from disk. Specify `noglobal` on `statapar init` to suppress global propagation for the entire session.
+> **Note:** Each job runs in a completely separate Stata process. Global macros from the calling session are automatically propagated to every job, so do-files can rely on globals just as they would in the main session. The active dataset can be forwarded to every job with `keepdata` on `statapar init`. Scalars and matrices are not carried over — anything beyond globals and data must be passed via `locals()`/`values()` or loaded from disk. Specify `noglobal` on `statapar init` to suppress global propagation for the entire session.
 
 ---
 
@@ -99,7 +106,7 @@ All six jobs run simultaneously — possibly not all at the same time, depending
 | `locals(namelist)` | `submit` | Names of local macros to define before running the do-file. |
 | `values("v1" "v2" ...)` | `submit` | Values for each local in `locals()`. Each value must be quoted. |
 
-> **Note:** the number of simultaneous processes is derived automatically as the largest integer such that `max_jobs * c(processors) < max_cpu`. If you use Stata-MP, `c(processors)` reflects the number of cores each Stata process is licensed to use, so the limit is respected in terms of total core usage.
+> **Note:** The maximum number of simultaneous processes defaults to a number s.t. the number of CPUs used is less than `number_of_cores_available / 2`. Use `max_cpu(#)` and `force` to exeed this. 
 
 ---
 
@@ -111,3 +118,7 @@ This GitHub repository provides two code examples of how to use Statapar:
 ---
 
 See `help statapar` after installing for full documentation.
+
+--- 
+## Issues
+Create an `` Issue `` in GitHub or contact me on adamreir@gmail.com if you are experiencing problems with Statapar. 
