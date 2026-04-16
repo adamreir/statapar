@@ -50,12 +50,9 @@ prog def statapar_init
 	// Derive max_jobs: largest integer s.t. max_jobs * c(processors) < max_cpu
 	local maxjobs = max(floor((`max_cpu' - 1) / c(processors)), 1)
 
-	// On lucia.nhh.no, cap max_jobs at 4 unless force is specified
-	if `"`c(hostname)'"' == "lucia.nhh.no" {
-		local lucia_maxjobs = 4
-		if `maxjobs' > `lucia_maxjobs' & "`force'" == "" {
-			local maxjobs = `lucia_maxjobs'
-		}
+	// On lucia.nhh.no, set max_jobs to 4 unless force is specified
+	if `"`c(hostname)'"' == "lucia.nhh.no" & "`force'" == "" {
+		local maxjobs = 4
 	}
 
 	// Restart environment if it's already active
@@ -286,7 +283,7 @@ prog __statapar_close_sh
 		file write statapar_shell_file `"	run_stata "\$f""' _n
 		file write statapar_shell_file `"	"' _n
 		file write statapar_shell_file `"	# If MAXJOBS running wait for one to finish"' _n
-		file write statapar_shell_file `"	while (( \$(jobs -rp | wc -l) >= MAXJOBS )); do "' _n
+		file write statapar_shell_file `"	while (( \$(jobs -rp | wc -l) > MAXJOBS )); do "' _n
 		file write statapar_shell_file `"		wait -n"' _n
 		file write statapar_shell_file `"	done"' _n
 		file write statapar_shell_file `"done"' _n
@@ -308,7 +305,7 @@ prog __statapar_close_sh
 
 		file write statapar_shell_file `""' _n
 		file write statapar_shell_file `"    # If MAXJOBS are running, wait until one finishes"' _n
-		file write statapar_shell_file `"    while (\$processes.Count -ge \$MAXJOBS) {"' _n
+		file write statapar_shell_file `"    while (\$processes.Count -gt \$MAXJOBS) {"' _n
 		file write statapar_shell_file `"	Start-Sleep -Seconds 1"' _n
 		file write statapar_shell_file `"	\$processes = @(\$processes | Where-Object { -not \$_.HasExited })"' _n
 		file write statapar_shell_file `"    }"' _n
