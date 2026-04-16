@@ -280,12 +280,11 @@ prog __statapar_close_sh
 		file write statapar_shell_file `""' _n
 
 		file write statapar_shell_file `"for f in "\${FILES[@]}"; do"' _n
-		file write statapar_shell_file `"	run_stata "\$f""' _n
-		file write statapar_shell_file `"	"' _n
-		file write statapar_shell_file `"	# If MAXJOBS running wait for one to finish"' _n
-		file write statapar_shell_file `"	while (( \$(jobs -rp | wc -l) > MAXJOBS )); do "' _n
+		file write statapar_shell_file `"	# Wait until fewer than MAXJOBS are running before launching"' _n
+		file write statapar_shell_file `"	while (( \$(jobs -rp | wc -l) >= MAXJOBS )); do "' _n
 		file write statapar_shell_file `"		wait -n"' _n
 		file write statapar_shell_file `"	done"' _n
+		file write statapar_shell_file `"	run_stata "\$f""' _n
 		file write statapar_shell_file `"done"' _n
 		file write statapar_shell_file `""' _n
 
