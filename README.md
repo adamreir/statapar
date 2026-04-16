@@ -106,7 +106,7 @@ Stata runns these jobs in parallel, each one with different values for `` `count
 | `locals(namelist)` | `submit` | Names of local macros to define before running the do-file. |
 | `values("v1" "v2" ...)` | `submit` | Values for each local in `locals()`. Each value must be quoted. |
 
-> **Note:** The maximum number of simultaneous processes defaults to a number s.t. the number of CPUs used is less than `number_of_cores_available / 2`. On the server Lucia, the maximum number of parallel processes is set to 4. Use `max_cpu(#)` and `force` to exeed this. 
+> **Note:** The maximum number of simultaneous processes defaults to a number s.t. the number of CPUs used is less than `number_of_cores_available / 2`. On the server Lucia, the maximum number of parallel processes is set to 4. Use `max_cpu(#)` and `force` to exceed this. 
 
 ---
 

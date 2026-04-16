@@ -81,13 +81,12 @@ Step 3 — run all queued jobs:
 
 {phang}
 {opt max_cpu(#)} sets the maximum number of logical CPUs that {cmd:statapar} may use in total across all parallel jobs.
-If not specified, the default is {cmd:max(floor(c(processors_mach)/2), 1)} — half the machine's available CPUs, rounded down, with a minimum of 1.
-{cmd:statapar} then automatically derives the number of simultaneous processes as the largest integer
-such that {cmd:max_jobs * c(processors) < max_cpu}.
+If not specified, the default is half the machine's available CPUs.
+The number of simultaneous processes is then set automatically based on the number of cores per Stata process ({cmd:c(processors)}).
 
 {phang}
-{opt force} allows {opt max_cpu(#)} to exceed the default limit.
-Without {opt force}, specifying a value above the default triggers an error.
+{opt force} allows {opt max_cpu(#)} to exceed the default limit (and the server cap described below).
+Without {opt force}, specifying a value above the applicable limit triggers an error.
 
 {phang}
 {opt noglobal} suppresses the automatic propagation of global macros to every job in the session.
@@ -100,10 +99,10 @@ each job then loads that file at startup, before any local macros are defined.
 The temporary file is deleted automatically once all jobs have finished.
 
 {pstd}
-{bf:Note:} {opt max_cpu()} caps total CPU usage, not the number of processes directly.
-Because each Stata-MP process uses {cmd:c(processors)} cores, the actual number of simultaneous processes
-is derived automatically — for example, with {cmd:max_cpu(8)} and Stata-MP/4, at most 1 process runs at a time
-(since 2 × 4 = 8 would not be strictly less than 8).
+{bf:Note:} {opt max_cpu()} caps total CPU usage, not the number of processes directly — the number of simultaneous
+processes is derived automatically so that total core usage stays within the limit.
+On the server {bf:lucia.nhh.no}, the number of simultaneous processes is additionally capped at 4 regardless of the machine default.
+Use {opt max_cpu(#)} together with {opt force} to exceed this cap.
 
 {pstd}
 {ul:statapar submit}
