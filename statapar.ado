@@ -38,6 +38,7 @@ prog def statapar_init
 
 	// Determine max_cpu (total logical CPUs available to statapar)
 	local default_max_cpu = max(floor(c(processors_mach)/2), 1)
+	local user_set_max_cpu = (`max_cpu' != 0)  // track whether user explicitly passed max_cpu
 	if `max_cpu' == 0 {
 		local max_cpu = `default_max_cpu'
 	}
@@ -45,6 +46,20 @@ prog def statapar_init
 		di as error "max_cpu(`max_cpu') exceeds the recommended limit of `default_max_cpu' (half of c(processors_mach)=`c(processors_mach)')."
 		di as error "Use the force option to override: statapar init, max_cpu(`max_cpu') force"
 		exit 198
+	}
+
+	// On lucia.nhh.no, cap max_cpu at 4 unless force is specified
+	if `"`c(hostname)'"' == "lucia.nhh.no" {
+		local lucia_cap = 4
+		if `max_cpu' > `lucia_cap' & `user_set_max_cpu' & "`force'" == "" {
+			di as error "max_cpu(`max_cpu') exceeds the limit of `lucia_cap' on `c(hostname)'."
+			di as error "Use the force option to override: statapar init, max_cpu(`max_cpu') force"
+			exit 198
+		}
+		else if `max_cpu' > `lucia_cap' & "`force'" == "" {
+			// Default exceeded cap — silently apply cap
+			local max_cpu = `lucia_cap'
+		}
 	}
 
 	// Derive max_jobs: largest integer s.t. max_jobs * c(processors) < max_cpu
