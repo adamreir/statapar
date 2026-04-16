@@ -5,4 +5,4 @@ sysuse citytemp, clear
 
 reg tempjan tempjuly
 
-estimates save "`output_directory'/model_ols", replace
+estimates save "${output_directory}/model_ols", replace

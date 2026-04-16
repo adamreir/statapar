@@ -6,4 +6,4 @@ sysuse citytemp, clear
 gen tempjuly_sq = tempjuly^2
 reg tempjan tempjuly tempjuly_sq
 
-estimates save "`output_directory'/model_quadratic", replace
+estimates save "${output_directory}/model_quadratic", replace

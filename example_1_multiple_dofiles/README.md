@@ -38,12 +38,16 @@ loc output_directory = "path/to/example_1_multiple_dofiles/output"
 
 ## How it works
 
-`example_main.do` opens separate Stata processes, each one running a different do-file. Global macros from the calling session are automatically available inside each job. Each do-file loads its own data, runs its model, and saves the estimates to the output folder. The output directory is passed in as a local macro:
+`example_main.do` opens separate Stata processes, each one running a different do-file. Global macros from the calling session are automatically available inside each job. `output_directory` is defined as a global in `example_main.do` and is automatically forwarded to each job, so the model do-files can use `${output_directory}` directly to save their estimates:
 
 ```stata
-statapar submit, dofile(model_ols.do)       locals(output_directory) values("path/to/output")
-statapar submit, dofile(model_quadratic.do) locals(output_directory) values("path/to/output")
-statapar submit, dofile(model_region_fe.do) locals(output_directory) values("path/to/output")
+global output_directory = "path/to/output"
+
+statapar init
+statapar submit, dofile(model_ols.do)
+statapar submit, dofile(model_quadratic.do)
+statapar submit, dofile(model_region_fe.do)
+statapar run
 ```
 
 Notice that unlike Example 2, each `submit` call points to a **different** do-file. Statapar simply runs whatever do-file you point it to — it does not have to be the same one every time.

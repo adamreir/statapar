@@ -28,20 +28,22 @@ loc output_directory = "path/to/example_1_single_dofile/output"
 
 ## How it works
 
-`example_main.do` opens separate Stata processes, each one running `example_client.do`. Global macros from the calling session are automatically available inside each job. In addition, statapar sets two local macros to job-specific values (supplied via `statapar submit`): `` `region' `` (which region to filter on) and `` `output_directory' `` (where to save the estimates). `example_client.do` looks like this:
+`example_main.do` opens separate Stata processes, each one running `example_client.do`. `output_directory` is defined as a global in `example_main.do` and is automatically forwarded to each job. Each call to `statapar submit` passes only the job-specific value of `` `region' ``:
+
+```stata
+global output_directory = "path/to/output"
+
+statapar submit, dofile(example_client.do) locals(region) values("1")
+statapar submit, dofile(example_client.do) locals(region) values("2")
+...
+```
+
+`example_client.do` uses the global for the output path and the local for filtering:
 
 ```stata
 sysuse citytemp, clear
 reg tempjan tempjuly if region == `region'
-estimates save "`output_directory'/region_`region'_jan-july", replace
-```
-
-Each call to `statapar submit` passes a different value of `region` and the same output directory:
-
-```stata
-statapar submit, dofile(example_client.do) locals(region output_directory) values("1" "path/to/output")
-statapar submit, dofile(example_client.do) locals(region output_directory) values("2" "path/to/output")
-...
+estimates save "${output_directory}/region_`region'_jan-july", replace
 ```
 
 Statapar creates a small temporary wrapper do-file for each job that defines the locals and then runs `example_client.do`. All four wrapper do-files are executed in parallel.
