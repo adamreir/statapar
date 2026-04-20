@@ -72,7 +72,7 @@ estimates save "${output_directory}/results_`country'_`year'", replace
 You can run this for every country-year combination in parallel using `locals()` and `values()`:
 
 ```stata
-global output_directory = "some_path" // Globals are forwarded to new processes
+global output_directory = "/path_for_output" // Globals are forwarded to new processes
 
 statapar init
 
