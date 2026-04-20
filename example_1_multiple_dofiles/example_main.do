@@ -1,13 +1,11 @@
 
-// Enter folders: 
+// Point Stata towards folders before running: 
 
-loc code_directory    = "" // "C:\Users\s16501\Documents\GitHub\statapar\example_1_multiple_dofiles"
-global output_directory = "" //"C:\Users\s16501\Documents\GitHub\statapar\example_1_multiple_dofiles\output"
+loc code_directory      = "" // Where Stata will find model_ols.do, model_quadratic.do, and model_region_fe.do. 
+global output_directory = "" // Where model_*.do will place regression results (this global will be accessible from the model_*.do do-files).
 
 // Run three different do-files in parallel, each estimating a different model:
 statapar init
-
-//set trace on
 
 statapar submit, dofile("`code_directory'/model_ols.do")
 statapar submit, dofile("`code_directory'/model_quadratic.do")
