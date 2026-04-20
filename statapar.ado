@@ -34,7 +34,7 @@ end
 *
 
 prog def statapar_init
-	syntax [, max_cpu(integer 0) force noglobal keepdata]
+	syntax [, max_cpu(integer 0) force noglobal keepdata tmpdir(string)]
 
 	// Determine max_cpu (total logical CPUs available to statapar)
 	local default_max_cpu = max(floor(c(processors_mach)/2), 1)
@@ -56,15 +56,15 @@ prog def statapar_init
 	}
 
 	// Restart environment if it's already active
-	if `"${__statapar_tmpfiles}"'!="" {
-		global __statapar_active = 0
+	if `"${statapar_tmpfiles}"'!="" {
+		global statapar_active = 0
 		di "Delete old multiprocessing environment"
-		foreach file of global __statapar_tmpfiles {
+		foreach file of global statapar_tmpfiles {
 			rm `file'
 		}
-		global __statapar_tmpfiles = ""
-		cap rm `"${__statapar_datafile}"'
-		global __statapar_datafile = ""
+		global statapar_tmpfiles = ""
+		cap rm `"${statapar_datafile}"'
+		global statapar_datafile = ""
 	}
 
 	di "Init new multiprocessing environment (max_cpu=`max_cpu', maxjobs (maximum # parallel jobs) =`maxjobs')"
@@ -78,7 +78,17 @@ prog def statapar_init
 	else 			loc unix = 0
 
 	loc username = "`c(username)'"
-	loc tmpdir = c(tmpdir)
+	if `"`tmpdir'"' != "" {
+		cap confirm file `"`tmpdir'"'
+		if _rc {
+			di as error `"tmpdir() directory not found: `tmpdir'"'
+			exit 198
+		}
+		loc tmpdir = `"`tmpdir'"'
+	}
+	else {
+		loc tmpdir = c(tmpdir)
+	}
 
 	// Figure out path for data tempfile if keepdata is specified
 	if "`keepdata'" != "" {
@@ -90,11 +100,11 @@ prog def statapar_init
 			}
 			loc n = `n'+1
 		}
-		global __statapar_datafile = `"`data_file'"'
+		global statapar_datafile = `"`data_file'"'
 		save `"`data_file'"', replace
 	}
 	else {
-		global __statapar_datafile = ""
+		global statapar_datafile = ""
 	}
 
 	// Figure out path for shell file
@@ -160,18 +170,18 @@ prog def statapar_init
 	file close statapar_shell_file
 
 	// Store information for subsequent calls
-	global __statapar_tmpfiles 	= `"`shell_file'"'
-	global __statapar_shellfile = `"`shell_file'"'
-	global __statapar_active 	= 1
-	global __statapar_noglobal 	= `"`noglobal'"'
-	global __statapar_tmpdir 	= `"`tmpdir'"'
+	global statapar_tmpfiles 	= `"`shell_file'"'
+	global statapar_shellfile = `"`shell_file'"'
+	global statapar_active 	= 1
+	global statapar_noglobal 	= `"`noglobal'"'
+	global statapar_tmpdir 	= `"`tmpdir'"'
 
 end
 
 prog statapar_submit
 	syntax, dofile(string) [locals(string) values(string asis)]
 
-	if "${__statapar_active}"!="1" {
+	if "${statapar_active}"!="1" {
 		di as error "Statapar session not open."
 		exit 198
 	}
@@ -205,7 +215,7 @@ prog statapar_submit
 	confirm file `"`dofile'"'
 
 	loc username = `"`c(username)'"'
-	loc tmpdir = `"${__statapar_tmpdir}"'
+	loc tmpdir = `"${statapar_tmpdir}"'
 
 	// Find a unique temp do-file path
 	loc n = 1
@@ -218,12 +228,12 @@ prog statapar_submit
 	}
 
 	// Append do-file path to shell file
-	qui file open statapar_shell_file using "${__statapar_shellfile}", write text append
+	qui file open statapar_shell_file using "${statapar_shellfile}", write text append
 	file write statapar_shell_file `""`do_file'""' _n
 	file close statapar_shell_file
 
 	// Write the temp do-file
-	global __statapar_tmpfiles = `"${__statapar_tmpfiles} `do_file'"'
+	global statapar_tmpfiles = `"${statapar_tmpfiles} `do_file'"'
 	qui file open statapar_do_file using `"`do_file'"', write text replace
 	file write statapar_do_file "" _n
 	file write statapar_do_file "capture log close _all" _n
@@ -231,7 +241,7 @@ prog statapar_submit
 	file write statapar_do_file "" _n
 
 	// Global macros from main environment
-	if "${__statapar_noglobal}" == "" {
+	if "${statapar_noglobal}" == "" {
 		local globs : all globals
 		foreach g of local globs {
 			file write statapar_do_file `"global `g' `"${`g'}"'"' _n
@@ -240,8 +250,8 @@ prog statapar_submit
 	}
 
 	// Load dataset from main environment if keepdata was specified
-	if `"${__statapar_datafile}"' != "" {
-		file write statapar_do_file `"use `"${__statapar_datafile}"', clear"' _n
+	if `"${statapar_datafile}"' != "" {
+		file write statapar_do_file `"use `"${statapar_datafile}"', clear"' _n
 		file write statapar_do_file "" _n
 	}
 
@@ -266,7 +276,7 @@ end
 prog __statapar_close_sh
 	// Writes the rest of the "shell" file.
 
-	if "${__statapar_active}"!="1" {
+	if "${statapar_active}"!="1" {
 		di as error "Statapar session not open."
 		exit 198
 	}
@@ -274,7 +284,7 @@ prog __statapar_close_sh
 	if c(os)=="Unix" 	loc unix = 1
 	else 			loc unix = 0
 
-	qui file open statapar_shell_file using "${__statapar_shellfile}", write text append
+	qui file open statapar_shell_file using "${statapar_shellfile}", write text append
 
 	if `unix' {
 		file write statapar_shell_file `")"' _n
@@ -333,8 +343,9 @@ end
 
 prog statapar_run
 	// Finish the shell file (with a function call) and exectute.
+	syntax [, keeptmpfiles]
 
-	if "${__statapar_active}"!="1" {
+	if "${statapar_active}"!="1" {
 		di as error "Statapar session not open."
 		exit 198
 	}
@@ -346,35 +357,38 @@ prog statapar_run
 
 	// Change to temp directory so Stata background processes write logs there
 	loc cwd = c(pwd)
-	loc tmpdir = "${__statapar_tmpdir}"
+	loc tmpdir = "${statapar_tmpdir}"
 	qui cd `"`tmpdir'"'
 
 	if `unix' {
-		! source "${__statapar_shellfile}"
+		! source "${statapar_shellfile}"
 	}
 	else {
-		shell powershell -ExecutionPolicy Bypass -File "${__statapar_shellfile}"
-	}
-
-	// Delete log files produced by background processes
-	foreach file of global __statapar_tmpfiles {
-		if substr(`"`file'"', -3, 3) == ".do" {
-			loc logfile = substr(`"`file'"', 1, length(`"`file'"') - 3) + ".log"
-			cap rm `"`logfile'"'
-		}
+		shell powershell -ExecutionPolicy Bypass -File "${statapar_shellfile}"
 	}
 
 	// Restore working directory
 	qui cd `"`cwd'"'
 
-	foreach file of global __statapar_tmpfiles {
-		rm `file'
+	// Delete log files produced by background processes
+	foreach file of global statapar_tmpfiles {
+		if substr(`"`file'"', -3, 3) == ".do" {
+			loc logfile = substr(`"`file'"', 1, length(`"`file'"') - 3) + ".log"
+			cap rm `"`logfile'"'
+		}
 	}
-	global __statapar_tmpfiles = ""
-	global __statapar_shellfile = ""
-	global __statapar_active = 0
-	global __statapar_noglobal = ""
-	if `"${__statapar_datafile}"' != "" cap rm `"${__statapar_datafile}"'
-	global __statapar_datafile = ""
-	global __statapar_tmpdir = ""
+	
+	if "`keeptmpfiles'" == "" {
+		foreach file of global statapar_tmpfiles {
+			rm `file'
+		}
+		if `"${statapar_datafile}"' != "" cap rm `"${statapar_datafile}"'
+	}
+
+	global statapar_tmpfiles = ""
+	global statapar_shellfile = ""
+	global statapar_active = 0
+	global statapar_noglobal = ""
+	global statapar_datafile = ""
+	global statapar_tmpdir = ""
 end
