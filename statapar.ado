@@ -78,8 +78,7 @@ prog def statapar_init
 	else 			loc unix = 0
 
 	loc username = "`c(username)'"
-	global __statapar_tmpdir = c(tmpdir)
-	loc tmpdir = "${__statapar_tmpdir}"
+	loc tmpdir = c(tmpdir)
 
 	// Figure out path for data tempfile if keepdata is specified
 	if "`keepdata'" != "" {
@@ -161,10 +160,11 @@ prog def statapar_init
 	file close statapar_shell_file
 
 	// Store information for subsequent calls
-	global __statapar_tmpfiles = `"`shell_file'"'
+	global __statapar_tmpfiles 	= `"`shell_file'"'
 	global __statapar_shellfile = `"`shell_file'"'
-	global __statapar_active = 1
-	global __statapar_noglobal = "`noglobal'"
+	global __statapar_active 	= 1
+	global __statapar_noglobal 	= `"`noglobal'"'
+	global __statapar_tmpdir 	= `"`tmpdir'"'
 
 end
 
