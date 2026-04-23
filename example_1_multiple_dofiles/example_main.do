@@ -2,7 +2,7 @@
 // Point Stata towards folders before running: 
 
 loc code_directory      = "" // Where Stata will find model_ols.do, model_quadratic.do, and model_region_fe.do. 
-global output_directory = "" // Where model_*.do will place regression results (this global will be accessible from the model_*.do do-files).
+global output_directory = "`code_directory'/output" // Where model_*.do will place regression results (this global will be accessible from the model_*.do do-files).
 
 // Run three different do-files in parallel, each estimating a different model:
 statapar init

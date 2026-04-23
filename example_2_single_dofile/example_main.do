@@ -1,7 +1,7 @@
 
 // Point Stata towards folders before running: 
 loc code_directory      = "" // Where Stata will find example_client.do
-global output_directory = "" // Where example_client.do will place regression results (this global will be accessible from example_client.do)
+global output_directory = "`code_directory'/output" // Where example_client.do will place regression results (this global will be accessible from example_client.do)
 
 // Run the same do-file four times in parallel, once per region:
 statapar init, keepdata

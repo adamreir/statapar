@@ -26,27 +26,29 @@ Because the three models are completely independent of each other, they can all 
 
 ## How to run it
 
-1. Download `example_main.do`, `model_ols.do`, `model_quadratic.do`, and `model_region_fe.do` and place them in a folder.
-2. Create a folder called `output` inside the same folder as the do-files.
-3. Open `example_main.do` in Stata, update the two path variables at the top to match your computer, and run the file.
+1. Download `example_1.zip` and extract it to a folder.
+2. Open `example_main.do` in Stata, set `code_directory` at the top to the folder you extracted to, and run the file.
 
 ```stata
-loc code_directory   = "path/to/example_1_multiple_dofiles"
-loc output_directory = "path/to/example_1_multiple_dofiles/output"
+loc code_directory = "path/to/example_1_multiple_dofiles"
 ```
-4. Run `example_main.do`. Statapar will launch three Stata processes simultaneously — one per model — and wait for all of them to finish before loading and displaying the results side by side.
+
+`output_directory` is set automatically as a global pointing to the `output` subfolder — you don't need to set it manually.
+
+3. Run `example_main.do`. Statapar will launch three Stata processes simultaneously — one per model — and wait for all of them to finish before loading and displaying the results side by side.
 
 ## How it works
 
 `example_main.do` opens separate Stata processes, each one running a different do-file. Global macros from the calling session are automatically available inside each job. `output_directory` is defined as a global in `example_main.do` and is automatically forwarded to each job, so the model do-files can use `${output_directory}` directly to save their estimates:
 
 ```stata
-global output_directory = "path/to/output"
+loc code_directory      = "path/to/example_1_multiple_dofiles"
+global output_directory = "`code_directory'/output"
 
 statapar init
-statapar submit, dofile(model_ols.do)
-statapar submit, dofile(model_quadratic.do)
-statapar submit, dofile(model_region_fe.do)
+statapar submit, dofile("`code_directory'/model_ols.do")
+statapar submit, dofile("`code_directory'/model_quadratic.do")
+statapar submit, dofile("`code_directory'/model_region_fe.do")
 statapar run
 ```
 

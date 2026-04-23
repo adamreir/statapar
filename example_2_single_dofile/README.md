@@ -1,4 +1,4 @@
-# Example 1: Running the same do-file with different inputs
+# Example 2: Running the same do-file with different inputs
 
 This example shows how to use `statapar` to run the **same do-file multiple times in parallel**, each time with a different set of local macro values.
 
@@ -16,25 +16,27 @@ It estimates a simple regression of January temperatures on July temperatures se
 
 ## How to run it
 
-1. Download `example_main.do` and `example_client.do` and place them in a folder.
-2. Create a folder called `output` inside the same folder as the two do-files.
-3. Open `example_main.do` in Stata, update the two path variables at the top to match your computer, and run the file.
+1. Download `example_2.zip` and extract it to a folder.
+2. Open `example_main.do` in Stata, set `code_directory` at the top to the folder you extracted to, and run the file.
 
 ```stata
-loc code_directory   = "path/to/example_1_single_dofile"
-loc output_directory = "path/to/example_1_single_dofile/output"
+loc code_directory = "path/to/example_2_single_dofile"
 ```
-4.  Run `example_main.do`. Statapar will launch four Stata processes simultaneously — one per region — and wait for all of them to finish before loading and displaying the results.
+
+`output_directory` is set automatically as a global pointing to the `output` subfolder — you don't need to set it manually.
+
+3. Run `example_main.do`. Statapar will launch four Stata processes simultaneously — one per region — and wait for all of them to finish before loading and displaying the results.
 
 ## How it works
 
 `example_main.do` opens separate Stata processes, each one running `example_client.do`. `output_directory` is defined as a global in `example_main.do` and is automatically forwarded to each job. Each call to `statapar submit` passes only the job-specific value of `` `region' ``:
 
 ```stata
-global output_directory = "path/to/output"
+loc code_directory      = "path/to/example_2_single_dofile"
+global output_directory = "`code_directory'/output"
 
-statapar submit, dofile(example_client.do) locals(region) values("1")
-statapar submit, dofile(example_client.do) locals(region) values("2")
+statapar submit, dofile("`code_directory'/example_client.do") locals(region) values("1")
+statapar submit, dofile("`code_directory'/example_client.do") locals(region) values("2")
 ...
 ```
 
